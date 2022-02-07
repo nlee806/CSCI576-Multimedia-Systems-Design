@@ -16,7 +16,7 @@ public class ImageDisplay {
 	/** Read Image RGB
 	 *  Reads the image of given width and height at the given imgPath into the provided BufferedImage.
 	 */
-	private void readImageRGB(int width, int height, String imgPath, BufferedImage img)
+	private void readImageRGB(int width, int height, String imgPath, BufferedImage img, float paramS, int paramQ, int paramM)
 	{
 		try
 		{
@@ -78,7 +78,7 @@ public class ImageDisplay {
 
 		// Read in the specified image
 		imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		readImageRGB(width, height, args[0], imgOne);
+		readImageRGB(width, height, args[0], imgOne, paramS, paramQ, paramM);
 		
 		// Use label to display the image
 		frame = new JFrame();
