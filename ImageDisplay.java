@@ -40,8 +40,30 @@ public class ImageDisplay {
 					byte r = bytes[ind];
 					byte g = bytes[ind+height*width];
 					byte b = bytes[ind+height*width*2]; 
+					
+					//8r,8g,8b,512x512
+					//paramS, paramQ, paramM
+					
+					//Scale 512/paramS
+					int x_new = 0;
+					int y_new = 0;
+					
+					//Quantization 2^paramQ values per channel, 0-255
+					int vpc = Math.exp(2,paramQ);
+					//divide 0-255
+					
+					
+					//Mode
+					if(paramM<0){ //Uniform Scaling
+						
+					}
+					else{ //Logarithmic Scaling
+						
+					}
+
 
 					int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+					
 					//int pix = ((a << 24) + (r << 16) + (g << 8) + b);
 					img.setRGB(x,y,pix);
 					ind++;
