@@ -60,22 +60,26 @@ public class ImageDisplay {
 
 	public void showIms(String[] args){
 		
+		float paramS;
+		int paramQ;
+		int paramM;
+		
+		// Read Scale from command line; between 0.0 < s <= 1.0
+		paramS = Float.parseFloat(args[1]);
+		System.out.println("Scale: " + paramS);
+		
+		// Read Quantization from command line; between 1 <= q <= 8
+		paramQ = Integer.parseInt(args[2]);
+		System.out.println("Quantization: " + paramQ);
+		
+		// Read Mode from command line; (-) -1 uniform quantization, (0,+) 0-255 logarithmic quantization
+		paramM = Integer.parseInt(args[3]);
+		System.out.println("Mode: " + paramM);
+
 		// Read in the specified image
 		imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		readImageRGB(width, height, args[0], imgOne);
 		
-		// Read Scale from command line; between 0.0 < s <= 1.0
-		float paramS = args[1];
-		System.out.println("Scale: " + paramS);
-		
-		// Read Quantization from command line
-		String paramQ = args[2];
-		System.out.println("The second parameter was: " + param1);
-		
-		// Read Mode from command line
-		String paramM = args[3];
-		System.out.println("The second parameter was: " + param1);
-
 		// Use label to display the image
 		frame = new JFrame();
 		GridBagLayout gLayout = new GridBagLayout();
