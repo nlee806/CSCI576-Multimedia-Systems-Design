@@ -3,6 +3,9 @@ import java.awt.*;
 import java.awt.image.*;
 import java.io.*;
 import javax.swing.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Objects;
 
 
 public class ImageDisplay {
@@ -20,54 +23,168 @@ public class ImageDisplay {
 	{
 		try
 		{
+			//Initial Image Data 256x256
 			int frameLength = width*height*3;
-
 			File file = new File(imgPath);
 			RandomAccessFile raf = new RandomAccessFile(file, "r");
 			raf.seek(0);
-
 			long len = frameLength;
 			byte[] bytes = new byte[(int) len];
-
 			raf.read(bytes);
-
-			int ind = 0;
+			//
+			
+			//1. Iterate through original image, collecting RGB values in 3D array.
+			byte[][][] refImage = new byte[height][width][3];
+			int refInd = 0;
 			for(int y = 0; y < height; y++)
 			{
 				for(int x = 0; x < width; x++)
 				{
+					byte rA = 0;
+					byte rR = bytes[refInd];
+					refImage[y][x][0] = rR;
+					byte rG = bytes[refInd+height*width];
+					refImage[y][x][1] = rG;
+					byte rB = bytes[refInd+height*width*2];
+					refImage[y][x][2] = rB;
+				}
+			}
+			
+			//2. Iterate through new image, making new x,y positions.
+			int height_new = (int)(paramS*height);
+			int width_new = (int)(paramS*width);
+			
+			double stepSize = 1.0/paramS;
+			
+			//Number of intervals to make.
+			int vpc = (int) Math.pow(2,paramQ);
+			
+			int x_new = 0;
+			int y_new = 0;
+
+			//Scale.
+			//int ind = 0;
+			for(int y = 0; y < height; y+=stepSize)
+			{
+				x_new = 0;
+				for(int x = 0; x < width; x+=stepSize)
+				{
 					byte a = 0;
-					byte r = bytes[ind];
-					byte g = bytes[ind+height*width];
-					byte b = bytes[ind+height*width*2]; 
+					byte r = refImage[y][x][0]; //= bytes[ind];
+					byte g = refImage[y][x][1]; //= bytes[ind+height*width];
+					byte b = refImage[y][x][2]; //= bytes[ind+height*width*2];
+					//8 bits r,8 bits g,8 bits b,512x512
 					
-					//8r,8g,8b,512x512
-					//paramS, paramQ, paramM
+					//Average Filtered Lookup, Kernel
+					int filteredR = 0;
+					int filteredG = 0;
+					int filteredB = 0;
+					for(int q=0;q<=2;q++){
+						int origPixRGB = refImage[y][x][q];
+						List<String> lookupList = new ArrayList<>();
 					
-					//Scale 512/paramS
-					int x_new = 0;
-					int y_new = 0;
+						if(y!=0&&x!=0){
+							if(Objects.isNull(refImage[y-1][x-1][q])!=true){
+								int oA = refImage[y-1][x-1][q];
+								lookupList.add(String.valueOf(oA));
+							}
+						}
+						if(y!=0){
+							if(Objects.isNull(refImage[y-1][x][q])!=true){
+								int oB = refImage[y-1][x][q];
+								lookupList.add(String.valueOf(oB));
+							}
+						}
+						if(y!=0 && x<width-1){
+							if(Objects.isNull(refImage[y-1][x+1][q])!=true){
+								int oC = refImage[y-1][x+1][q];
+								lookupList.add(String.valueOf(oC));
+							}
+						}
+						if(x!=0){
+							if(Objects.isNull(refImage[y][x-1][q])!=true){
+								int oD = refImage[y][x-1][q];
+								lookupList.add(String.valueOf(oD));
+							}
+						}
+						if(Objects.isNull(refImage[y][x][q])!=true){
+							int oE = refImage[y][x][q];
+							lookupList.add(String.valueOf(oE));
+						}
+						if(x<width-1){
+							if(Objects.isNull(refImage[y][x+1][q])!=true){
+								int oF = refImage[y][x+1][q];
+								lookupList.add(String.valueOf(oF));
+							}
+						}
+						if(y<height-1 && x!=0){
+							if(Objects.isNull(refImage[y+1][x-1][q])!=true){
+								int oG = refImage[y+1][x-1][q];
+								lookupList.add(String.valueOf(oG));
+							}
+						}
+						if(y<height-1){
+							if(Objects.isNull(refImage[y+1][x][q])!=true){
+								int oH = refImage[y+1][x][q];
+								lookupList.add(String.valueOf(oH));
+							}
+						}
+						if(y<height-1 && x<width-1){
+							if(Objects.isNull(refImage[y+1][x+1][q])!=true){
+								int oI = refImage[y+1][x+1][q];
+								lookupList.add(String.valueOf(oI));
+							}
+						}
+						int lookupListSize = lookupList.size();
+						double filterSum = 0;
+						for(String value:lookupList){
+							double filter = (1/lookupListSize)*Integer.parseInt(value);
+							filterSum = filterSum+filter;
+						}
+						if(q==0){
+							filteredR = (int) filterSum;
+						}
+						else if(q==1){
+							filteredG = (int) filterSum;
+						}
+						else if(q==2){
+							filteredB = (int) filterSum;
+						}
+					}
+					byte r_new = (byte)filteredR;
+					byte g_new = (byte)filteredG;
+					byte b_new = (byte)filteredB;
+					//
 					
-					//Quantization 2^paramQ values per channel, 0-255
-					int vpc = Math.exp(2,paramQ);
-					//divide 0-255
-					
+					//Quantization 2^paramQ values per channel, 0-255. clamp to 0-255.
+					//divide 0-255 into vpc sections
 					
 					//Mode
 					if(paramM<0){ //Uniform Scaling
 						
+						
 					}
 					else{ //Logarithmic Scaling
 						
+						
 					}
 
-
-					int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+					//int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+					int filterPix = 0xff000000 | ((r_new & 0xff) << 16) | ((g_new & 0xff) << 8) | (b_new & 0xff);
 					
 					//int pix = ((a << 24) + (r << 16) + (g << 8) + b);
-					img.setRGB(x,y,pix);
-					ind++;
+					//img.setRGB(x,y,pix);
+					
+					//System.out.println("x_new "+x_new+" y_new "+y_new+"filterPix"+filterPix);
+					
+					if(x_new<width_new && y_new<height_new){
+						img.setRGB(x_new,y_new,filterPix);
+					}
+					
+					//ind++;
+					x_new++;
 				}
+				y_new++;
 			}
 		}
 		catch (FileNotFoundException e) 
@@ -97,9 +214,12 @@ public class ImageDisplay {
 		// Read Mode from command line; (-) -1 uniform quantization, (0,+) 0-255 logarithmic quantization
 		paramM = Integer.parseInt(args[3]);
 		System.out.println("Mode: " + paramM);
+		
+		int height_new = (int)(paramS*height);
+		int width_new = (int)(paramS*width);
 
 		// Read in the specified image
-		imgOne = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		imgOne = new BufferedImage(width_new, height_new, BufferedImage.TYPE_INT_RGB);
 		readImageRGB(width, height, args[0], imgOne, paramS, paramQ, paramM);
 		
 		// Use label to display the image
