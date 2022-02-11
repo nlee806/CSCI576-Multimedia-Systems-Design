@@ -47,6 +47,7 @@ public class ImageDisplay {
 					refImage[y][x][1] = rG;
 					byte rB = bytes[refInd+height*width*2];
 					refImage[y][x][2] = rB;
+					refInd++;
 				}
 			}
 			
@@ -74,6 +75,7 @@ public class ImageDisplay {
 					byte g = refImage[y][x][1]; //= bytes[ind+height*width];
 					byte b = refImage[y][x][2]; //= bytes[ind+height*width*2];
 					//8 bits r,8 bits g,8 bits b,512x512
+					//System.out.println("testr"+r+" testg"+g+" testb"+b);
 					
 					//Average Filtered Lookup, Kernel
 					int filteredR = 0;
@@ -81,66 +83,71 @@ public class ImageDisplay {
 					int filteredB = 0;
 					for(int q=0;q<=2;q++){
 						int origPixRGB = refImage[y][x][q];
-						List<String> lookupList = new ArrayList<>();
+						List<Integer> lookupList = new ArrayList<>();
 					
 						if(y!=0&&x!=0){
 							if(Objects.isNull(refImage[y-1][x-1][q])!=true){
 								int oA = refImage[y-1][x-1][q];
-								lookupList.add(String.valueOf(oA));
+								lookupList.add(oA);
 							}
 						}
 						if(y!=0){
 							if(Objects.isNull(refImage[y-1][x][q])!=true){
 								int oB = refImage[y-1][x][q];
-								lookupList.add(String.valueOf(oB));
+								lookupList.add(oB);
 							}
 						}
 						if(y!=0 && x<width-1){
 							if(Objects.isNull(refImage[y-1][x+1][q])!=true){
 								int oC = refImage[y-1][x+1][q];
-								lookupList.add(String.valueOf(oC));
+								lookupList.add(oC);
 							}
 						}
 						if(x!=0){
 							if(Objects.isNull(refImage[y][x-1][q])!=true){
 								int oD = refImage[y][x-1][q];
-								lookupList.add(String.valueOf(oD));
+								lookupList.add(oD);
 							}
 						}
 						if(Objects.isNull(refImage[y][x][q])!=true){
 							int oE = refImage[y][x][q];
-							lookupList.add(String.valueOf(oE));
+							lookupList.add(oE);
 						}
 						if(x<width-1){
 							if(Objects.isNull(refImage[y][x+1][q])!=true){
 								int oF = refImage[y][x+1][q];
-								lookupList.add(String.valueOf(oF));
+								lookupList.add(oF);
 							}
 						}
 						if(y<height-1 && x!=0){
 							if(Objects.isNull(refImage[y+1][x-1][q])!=true){
 								int oG = refImage[y+1][x-1][q];
-								lookupList.add(String.valueOf(oG));
+								lookupList.add(oG);
 							}
 						}
 						if(y<height-1){
 							if(Objects.isNull(refImage[y+1][x][q])!=true){
 								int oH = refImage[y+1][x][q];
-								lookupList.add(String.valueOf(oH));
+								lookupList.add(oH);
 							}
 						}
 						if(y<height-1 && x<width-1){
 							if(Objects.isNull(refImage[y+1][x+1][q])!=true){
 								int oI = refImage[y+1][x+1][q];
-								lookupList.add(String.valueOf(oI));
+								lookupList.add(oI);
 							}
 						}
 						int lookupListSize = lookupList.size();
+						//System.out.println("lookupList"+lookupList+lookupListSize);
 						double filterSum = 0;
-						for(String value:lookupList){
-							double filter = (1/lookupListSize)*Integer.parseInt(value);
+						for(int value:lookupList){
+							//System.out.println("1/lookup"+1/lookupListSize);
+							//System.out.println("value"+value);
+							double filter = (double)(1.0/lookupListSize)*(value);
+							//System.out.println("filter"+filter);
 							filterSum = filterSum+filter;
 						}
+						//System.out.println("filterSum"+filterSum);
 						if(q==0){
 							filteredR = (int) filterSum;
 						}
@@ -154,6 +161,7 @@ public class ImageDisplay {
 					byte r_new = (byte)filteredR;
 					byte g_new = (byte)filteredG;
 					byte b_new = (byte)filteredB;
+					//System.out.println("test"+r_new+" "+g_new+" "+b_new);
 					//
 					
 					//Quantization 2^paramQ values per channel, 0-255. clamp to 0-255.
