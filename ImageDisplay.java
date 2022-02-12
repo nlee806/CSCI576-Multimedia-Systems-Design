@@ -54,22 +54,37 @@ public class ImageDisplay {
 			//2. Iterate through new image, making new x,y positions.
 			int height_new = (int)(paramS*height);
 			int width_new = (int)(paramS*width);
-			
 			double stepSize = 1.0/paramS;
-			
-			//Number of intervals to make.
-			int vpc = (int) Math.pow(2,paramQ);
-			
 			int x_new = 0;
 			int y_new = 0;
 
 			//Scale.
 			//int ind = 0;
-			for(int y = 0; y < height; y+=stepSize)
+			for(double sY = 0; sY < height; sY+=stepSize)
 			{
 				x_new = 0;
-				for(int x = 0; x < width; x+=stepSize)
+				for(double sX = 0; sX < width; sX+=stepSize)
 				{
+					int y = (int)Math.floor(sY);
+					int x = (int)Math.floor(sX);
+					//Number of intervals to make.
+					int vpc = (int) Math.pow(2,paramQ);
+					int intervalSize = 256/vpc;
+					
+					//Quantization 2^paramQ values per channel, 0-255.
+					//divide 0-255 into vpc sections
+					//Mode
+					if(paramM<0){ //Uniform Scaling
+						int rangeSize = 256/vpc;
+						
+						
+					}
+					else{ //Logarithmic Scaling
+						int pivot = paramM;
+						
+						
+					}
+					
 					byte a = 0;
 					byte r = refImage[y][x][0]; //= bytes[ind];
 					byte g = refImage[y][x][1]; //= bytes[ind+height*width];
@@ -87,67 +102,62 @@ public class ImageDisplay {
 					
 						if(y!=0&&x!=0){
 							if(Objects.isNull(refImage[y-1][x-1][q])!=true){
-								int oA = refImage[y-1][x-1][q];
+								int oA = refImage[y-1][x-1][q] & 0xff;
 								lookupList.add(oA);
 							}
 						}
 						if(y!=0){
 							if(Objects.isNull(refImage[y-1][x][q])!=true){
-								int oB = refImage[y-1][x][q];
+								int oB = refImage[y-1][x][q] & 0xff;
 								lookupList.add(oB);
 							}
 						}
 						if(y!=0 && x<width-1){
 							if(Objects.isNull(refImage[y-1][x+1][q])!=true){
-								int oC = refImage[y-1][x+1][q];
+								int oC = refImage[y-1][x+1][q] & 0xff;
 								lookupList.add(oC);
 							}
 						}
 						if(x!=0){
 							if(Objects.isNull(refImage[y][x-1][q])!=true){
-								int oD = refImage[y][x-1][q];
+								int oD = refImage[y][x-1][q] & 0xff;
 								lookupList.add(oD);
 							}
 						}
 						if(Objects.isNull(refImage[y][x][q])!=true){
-							int oE = refImage[y][x][q];
+							int oE = refImage[y][x][q] & 0xff;
 							lookupList.add(oE);
 						}
 						if(x<width-1){
 							if(Objects.isNull(refImage[y][x+1][q])!=true){
-								int oF = refImage[y][x+1][q];
+								int oF = refImage[y][x+1][q] & 0xff;
 								lookupList.add(oF);
 							}
 						}
 						if(y<height-1 && x!=0){
 							if(Objects.isNull(refImage[y+1][x-1][q])!=true){
-								int oG = refImage[y+1][x-1][q];
+								int oG = refImage[y+1][x-1][q] & 0xff;
 								lookupList.add(oG);
 							}
 						}
 						if(y<height-1){
 							if(Objects.isNull(refImage[y+1][x][q])!=true){
-								int oH = refImage[y+1][x][q];
+								int oH = refImage[y+1][x][q] & 0xff;
 								lookupList.add(oH);
 							}
 						}
 						if(y<height-1 && x<width-1){
 							if(Objects.isNull(refImage[y+1][x+1][q])!=true){
-								int oI = refImage[y+1][x+1][q];
+								int oI = refImage[y+1][x+1][q] & 0xff;
 								lookupList.add(oI);
 							}
 						}
 						int lookupListSize = lookupList.size();
-						//System.out.println("lookupList"+lookupList+lookupListSize);
 						double filterSum = 0;
 						for(int value:lookupList){
-							//System.out.println("1/lookup"+1/lookupListSize);
-							//System.out.println("value"+value);
 							double filter = (double)(1.0/lookupListSize)*(value);
-							//System.out.println("filter"+filter);
 							filterSum = filterSum+filter;
 						}
-						//System.out.println("filterSum"+filterSum);
 						if(q==0){
 							filteredR = (int) filterSum;
 						}
@@ -161,29 +171,19 @@ public class ImageDisplay {
 					byte r_new = (byte)filteredR;
 					byte g_new = (byte)filteredG;
 					byte b_new = (byte)filteredB;
-					//System.out.println("test"+r_new+" "+g_new+" "+b_new);
+					//No Quantization
+					if(paramQ==8){
+						r_new = r;
+						g_new = g;
+						b_new = b;
+					}
 					//
-					
-					//Quantization 2^paramQ values per channel, 0-255. clamp to 0-255.
-					//divide 0-255 into vpc sections
-					
-					//Mode
-					if(paramM<0){ //Uniform Scaling
-						
-						
-					}
-					else{ //Logarithmic Scaling
-						
-						
-					}
 
 					//int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
 					int filterPix = 0xff000000 | ((r_new & 0xff) << 16) | ((g_new & 0xff) << 8) | (b_new & 0xff);
 					
 					//int pix = ((a << 24) + (r << 16) + (g << 8) + b);
 					//img.setRGB(x,y,pix);
-					
-					//System.out.println("x_new "+x_new+" y_new "+y_new+"filterPix"+filterPix);
 					
 					if(x_new<width_new && y_new<height_new){
 						img.setRGB(x_new,y_new,filterPix);
