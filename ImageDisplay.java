@@ -51,7 +51,72 @@ public class ImageDisplay {
 				}
 			}
 			
-			//2. Iterate through new image, making new x,y positions.
+			//2. Quantization Factor
+			double vpc = Math.pow(2,paramQ);
+			List<Double> midpointsList = new ArrayList<>();
+					
+			//Quantization 2^paramQ values per channel, 0-255.
+			//divide 0-255 into vpc sections
+			//Mode
+			if(paramM<0){ //Uniform Scaling
+				double rangeSize = 256/vpc;
+				double midpoint = rangeSize/2;
+				for(double z=midpoint;z<256;z+=rangeSize){
+					midpointsList.add(z);
+				}
+				Object[] midpoints = midpointsList.toArray();
+				for(int u = 0; u < height; u++){
+					for(int t = 0; t < width; t++){
+						for(int w = 0; w < 3; w++){
+							double quantizedValue = 500;
+							double smallestDistance = 300; //XXX
+							double searchValue = refImage[u][t][w] & 0xff;
+							for(int v = 0; v < midpoints.length; v++){
+								double distance = Math.abs((double)midpoints[v] - searchValue);
+								if(distance < smallestDistance){
+									smallestDistance = distance;
+									quantizedValue = (double)midpoints[v];
+								}
+							}
+							int IntQV = (int)quantizedValue;
+							refImage[u][t][w] = (byte)IntQV;//(IntQV & 0xff);
+						}
+					}
+				}
+			}
+			else{ //Logarithmic Scaling
+				int pivot = paramM;
+					
+				//change this--------------
+				double rangeSize = 256/vpc;
+				double midpoint = rangeSize/2;
+				for(double z=midpoint;z<256;z+=rangeSize){
+					midpointsList.add(z);
+				}
+				Object[] midpoints = midpointsList.toArray();
+				for(int u = 0; u < height; u++){
+					for(int t = 0; t < width; t++){
+						for(int w = 0; w < 3; w++){
+							double quantizedValue = 500;
+							double smallestDistance = 300; //XXX
+							double searchValue = refImage[u][t][w] & 0xff;
+							for(int v = 0; v < midpoints.length; v++){
+								double distance = Math.abs((double)midpoints[v] - searchValue);
+								if(distance < smallestDistance){
+									smallestDistance = distance;
+									quantizedValue = (double)midpoints[v];
+								}
+							}
+							int IntQV = (int)quantizedValue;
+							refImage[u][t][w] = (byte)IntQV;//(IntQV & 0xff);
+						}
+					}
+				}		
+				//	change this------------	
+				System.out.println("Oops");		
+			}
+			
+			//3. Iterate through new image, making new x,y positions.
 			int height_new = (int)(paramS*height);
 			int width_new = (int)(paramS*width);
 			double stepSize = 1.0/paramS;
@@ -59,7 +124,6 @@ public class ImageDisplay {
 			int y_new = 0;
 
 			//Scale.
-			//int ind = 0;
 			for(double sY = 0; sY < height; sY+=stepSize)
 			{
 				x_new = 0;
@@ -68,22 +132,6 @@ public class ImageDisplay {
 					int y = (int)Math.floor(sY);
 					int x = (int)Math.floor(sX);
 					//Number of intervals to make.
-					int vpc = (int) Math.pow(2,paramQ);
-					int intervalSize = 256/vpc;
-					
-					//Quantization 2^paramQ values per channel, 0-255.
-					//divide 0-255 into vpc sections
-					//Mode
-					if(paramM<0){ //Uniform Scaling
-						int rangeSize = 256/vpc;
-						
-						
-					}
-					else{ //Logarithmic Scaling
-						int pivot = paramM;
-						
-						
-					}
 					
 					byte a = 0;
 					byte r = refImage[y][x][0]; //= bytes[ind];
@@ -171,7 +219,7 @@ public class ImageDisplay {
 					byte r_new = (byte)filteredR;
 					byte g_new = (byte)filteredG;
 					byte b_new = (byte)filteredB;
-					//No Quantization
+					//No Quantization for 8 bits
 					if(paramQ==8){
 						r_new = r;
 						g_new = g;
@@ -183,13 +231,9 @@ public class ImageDisplay {
 					int filterPix = 0xff000000 | ((r_new & 0xff) << 16) | ((g_new & 0xff) << 8) | (b_new & 0xff);
 					
 					//int pix = ((a << 24) + (r << 16) + (g << 8) + b);
-					//img.setRGB(x,y,pix);
-					
 					if(x_new<width_new && y_new<height_new){
-						img.setRGB(x_new,y_new,filterPix);
+						img.setRGB(x_new,y_new,filterPix); //img.setRGB(x,y,pix);
 					}
-					
-					//ind++;
 					x_new++;
 				}
 				y_new++;
@@ -229,6 +273,7 @@ public class ImageDisplay {
 		// Read in the specified image
 		imgOne = new BufferedImage(width_new, height_new, BufferedImage.TYPE_INT_RGB);
 		readImageRGB(width, height, args[0], imgOne, paramS, paramQ, paramM);
+		System.out.println("Finished.");
 		
 		// Use label to display the image
 		frame = new JFrame();
