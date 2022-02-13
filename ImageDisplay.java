@@ -51,14 +51,11 @@ public class ImageDisplay {
 				}
 			}
 			
-			//2. Quantization Factor
+			//2. Quantization: 2^paramQ values per channel, 0-255 into vpc sections.
 			double vpc = Math.pow(2,paramQ);
 			List<Double> midpointsList = new ArrayList<>();
 					
-			//Quantization 2^paramQ values per channel, 0-255.
-			//divide 0-255 into vpc sections
-			//Mode
-			if(paramM<0){ //Uniform Scaling
+			if(paramM<0){ //2a. Mode: Uniform Scaling
 				double rangeSize = 256/vpc;
 				double midpoint = rangeSize/2;
 				for(double z=midpoint;z<256;z+=rangeSize){
@@ -68,8 +65,8 @@ public class ImageDisplay {
 				for(int u = 0; u < height; u++){
 					for(int t = 0; t < width; t++){
 						for(int w = 0; w < 3; w++){
-							double quantizedValue = 500;
-							double smallestDistance = 300; //XXX
+							double quantizedValue = 0;
+							double smallestDistance = 300; //Larger than 255
 							double searchValue = refImage[u][t][w] & 0xff;
 							for(int v = 0; v < midpoints.length; v++){
 								double distance = Math.abs((double)midpoints[v] - searchValue);
@@ -84,21 +81,48 @@ public class ImageDisplay {
 					}
 				}
 			}
-			else{ //Logarithmic Scaling
-				int pivot = paramM;
-					
-				//change this--------------
-				double rangeSize = 256/vpc;
-				double midpoint = rangeSize/2;
-				for(double z=midpoint;z<256;z+=rangeSize){
-					midpointsList.add(z);
+			else{ //2b. Mode: Logarithmic Scaling
+				int pivot = paramM; //any integer from 0-255
+				double higherThanPivot = Math.abs(255-paramM);
+				double numHighPartitions = Math.round(higherThanPivot/255 * vpc); // XXX should not exceed 8
+				double lowerThanPivot = pivot;
+				double numLowPartitions = Math.round(lowerThanPivot/255 * vpc); // XXX should not exceed 8
+				
+				double lowPowKeep = 0;
+				for(double lowZ = 0; lowZ<numLowPartitions;lowZ++){
+					double lowMidPoint = pivot-Math.pow(2,lowZ); //Alternatively keep adding lowPowKeep to Math.pow(2,lowZ)
+					lowPowKeep = Math.pow(2,lowZ);
+					midpointsList.add(lowMidPoint);
+				}
+				double highPowKeep = 0;
+				for(double highZ = 0; highZ<numHighPartitions; highZ++){
+					double highMidPoint = pivot+Math.pow(2,highZ); //Alternatively keep adding highPowKeep to Math.pow(2,highZ)
+					highPowKeep = Math.pow(2,highZ);
+					midpointsList.add(highMidPoint);
 				}
 				Object[] midpoints = midpointsList.toArray();
+				double max = (double) midpoints[0];
+				double min = (double) midpoints[0];
+				for(int o=0;o<midpoints.length;o++){
+					if((double)midpoints[o]>max){
+						max = (double)midpoints[o];
+					}
+					if((double)midpoints[o]<min){
+						min = (double)midpoints[o];
+					}
+				}
+				//Scale midpoints to 0-255.
+				for(int p=0;p<midpoints.length;p++){
+					double unscaled = (double)midpoints[p];
+					double scaled = (255-0)*(unscaled-min)/(max-min)+0;
+					midpoints[p] = scaled;
+				}
+				
 				for(int u = 0; u < height; u++){
 					for(int t = 0; t < width; t++){
 						for(int w = 0; w < 3; w++){
-							double quantizedValue = 500;
-							double smallestDistance = 300; //XXX
+							double quantizedValue = 0;
+							double smallestDistance = 300; //Larger than 255
 							double searchValue = refImage[u][t][w] & 0xff;
 							for(int v = 0; v < midpoints.length; v++){
 								double distance = Math.abs((double)midpoints[v] - searchValue);
@@ -112,18 +136,15 @@ public class ImageDisplay {
 						}
 					}
 				}		
-				//	change this------------	
-				System.out.println("Oops");		
 			}
 			
-			//3. Iterate through new image, making new x,y positions.
+			//3. Scale: Iterate through new image, making new x,y positions.
 			int height_new = (int)(paramS*height);
 			int width_new = (int)(paramS*width);
 			double stepSize = 1.0/paramS;
 			int x_new = 0;
 			int y_new = 0;
 
-			//Scale.
 			for(double sY = 0; sY < height; sY+=stepSize)
 			{
 				x_new = 0;
@@ -131,16 +152,14 @@ public class ImageDisplay {
 				{
 					int y = (int)Math.floor(sY);
 					int x = (int)Math.floor(sX);
-					//Number of intervals to make.
 					
 					byte a = 0;
 					byte r = refImage[y][x][0]; //= bytes[ind];
 					byte g = refImage[y][x][1]; //= bytes[ind+height*width];
 					byte b = refImage[y][x][2]; //= bytes[ind+height*width*2];
 					//8 bits r,8 bits g,8 bits b,512x512
-					//System.out.println("testr"+r+" testg"+g+" testb"+b);
 					
-					//Average Filtered Lookup, Kernel
+					//3a. Average Filtered Lookup, Kernel
 					int filteredR = 0;
 					int filteredG = 0;
 					int filteredB = 0;
@@ -219,7 +238,7 @@ public class ImageDisplay {
 					byte r_new = (byte)filteredR;
 					byte g_new = (byte)filteredG;
 					byte b_new = (byte)filteredB;
-					//No Quantization for 8 bits
+					//3b. No Quantization for 8 bits
 					if(paramQ==8){
 						r_new = r;
 						g_new = g;
